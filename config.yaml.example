@@ -70,6 +70,12 @@ surveyor:
     base_url: "http://localhost:11434"
     model: "nomic-embed-text"
     embedding_dims: 768
+    # api_key: "${OPENROUTER_API_KEY}"  # If set, uses OpenAI-compatible /v1/embeddings endpoint
+    # When using OpenRouter for embeddings, set:
+    #   base_url: "https://openrouter.ai/api/v1"
+    #   model: "openai/text-embedding-3-small"
+    #   embedding_dims: 1536
+    #   api_key: "${OPENROUTER_API_KEY}"
   milvus:
     uri: "./data/milvus_lite.db"
     collection_name: "vault_embeddings"

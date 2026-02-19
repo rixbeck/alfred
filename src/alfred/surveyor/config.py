@@ -27,6 +27,7 @@ class OllamaConfig:
     base_url: str = "http://localhost:11434"
     model: str = "nomic-embed-text"
     embedding_dims: int = 768
+    api_key: str = ""  # If set, uses OpenAI-compatible /v1/embeddings endpoint
 
 
 @dataclass
