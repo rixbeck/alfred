@@ -149,22 +149,21 @@ def run_quickstart() -> None:
         (vault / d).mkdir(parents=True, exist_ok=True)
     print(f"  Created vault directory: {vault_path}")
 
-    # Copy scaffold
+    # Copy scaffold — copies the entire scaffold tree (dirs, templates, bases, config)
     if do_scaffold and scaffold_dir.exists():
-        for subdir in ["_templates", "_bases", ".obsidian"]:
-            src = scaffold_dir / subdir
-            dst = vault / subdir
-            if src.exists():
+        for item in scaffold_dir.iterdir():
+            src = item
+            dst = vault / item.name
+            if src.is_dir():
                 if dst.exists():
-                    shutil.rmtree(dst)
-                shutil.copytree(src, dst)
+                    # Merge: copy contents without wiping existing files
+                    shutil.copytree(src, dst, dirs_exist_ok=True)
+                else:
+                    shutil.copytree(src, dst)
+            else:
+                shutil.copy2(src, dst)
 
-        for fname in ["CLAUDE.md", "README.md", "Start Here.md"]:
-            src = scaffold_dir / fname
-            if src.exists():
-                shutil.copy2(src, vault / fname)
-
-        print(f"  Copied scaffold (templates, bases, .obsidian config)")
+        print(f"  Copied scaffold (entity dirs, templates, bases, .obsidian config)")
 
     # Build config.yaml
     config = {
