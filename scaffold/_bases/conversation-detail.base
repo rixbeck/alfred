@@ -1,0 +1,37 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Messages
+    filters: type == "input"
+    order:
+      - file.name
+      - from
+      - received
+      - status
+      - alfred_instructions
+    sort:
+      - property: received
+        direction: ASC
+  - type: table
+    name: Tasks
+    filters: type == "task"
+    order:
+      - file.name
+      - assigned
+      - status
+      - due
+    sort:
+      - property: due
+        direction: ASC
+  - type: table
+    name: Related
+    filters:
+      and:
+        - type != "input"
+        - type != "task"
+    order:
+      - file.name
+      - type
+      - status

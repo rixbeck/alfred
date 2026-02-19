@@ -1,0 +1,32 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Based On
+    description: Assumptions and evidence this decision rests on
+    filters:
+      or:
+        - type == "assumption"
+        - type == "constraint"
+    order:
+      - file.name
+      - type
+      - status
+      - confidence
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Related
+    filters:
+      and:
+        - type != "assumption"
+        - type != "constraint"
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.name
+        direction: ASC

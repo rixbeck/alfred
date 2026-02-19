@@ -1,0 +1,14 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Sources
+    description: Records that contributed to this synthesis
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.name
+        direction: ASC

@@ -1,0 +1,20 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Tasks
+    filters:
+      and:
+        - type == "task"
+        - status != "done"
+        - status != "cancelled"
+    order:
+      - file.name
+      - assigned
+      - kind
+      - status
+      - due
+    sort:
+      - property: due
+        direction: ASC

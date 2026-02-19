@@ -1,0 +1,43 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Dependencies
+    filters:
+      or:
+        - type == "process"
+        - type == "constraint"
+        - type == "org"
+    order:
+      - file.name
+      - type
+      - status
+      - governed_by
+    sort:
+      - property: type
+        direction: ASC
+      - property: file.name
+        direction: ASC
+    description: Processes and records this process depends on or is governed by
+  - type: table
+    name: Runs
+    filters: type == "run"
+    order:
+      - file.name
+      - status
+      - started
+      - current_step
+    sort:
+      - property: started
+        direction: DESC
+  - type: table
+    name: Notes
+    filters: type == "note"
+    order:
+      - file.name
+      - subtype
+      - created
+    sort:
+      - property: created
+        direction: DESC

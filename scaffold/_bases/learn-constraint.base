@@ -1,0 +1,24 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Affected Projects
+    description: Projects impacted by this constraint
+    filters: type == "project"
+    order:
+      - file.name
+      - status
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Related
+    filters: type != "project"
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.name
+        direction: ASC

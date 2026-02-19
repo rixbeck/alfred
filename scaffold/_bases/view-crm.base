@@ -1,0 +1,92 @@
+views:
+  - type: table
+    name: People
+    filters: type == "person"
+    order:
+      - file.name
+      - org
+      - role
+      - email
+      - status
+    sort:
+      - property: status
+        direction: ASC
+      - property: file.name
+        direction: ASC
+    columnSize:
+      note.org: 107
+      note.role: 108
+      note.email: 166
+  - type: table
+    name: Organisations
+    filters: type == "org"
+    order:
+      - file.name
+      - org_type
+      - website
+      - status
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Active Conversations
+    filters:
+      and:
+        - type == "conversation"
+        - status == "active"
+    order:
+      - file.name
+      - channel
+      - participants
+      - project
+      - org
+      - last_activity
+      - message_count
+    sort:
+      - property: channel
+        direction: DESC
+      - property: last_activity
+        direction: DESC
+  - type: table
+    name: Waiting
+    filters:
+      and:
+        - type == "conversation"
+        - status == "waiting"
+    order:
+      - file.name
+      - channel
+      - participants
+      - project
+      - org
+      - last_activity
+    sort:
+      - property: last_activity
+        direction: ASC
+  - type: table
+    name: Accounts
+    filters: type == "account"
+    order:
+      - file.name
+      - account_type
+      - provider
+      - managed_by
+      - status
+      - cost
+      - renewal_date
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Assets
+    filters: type == "asset"
+    order:
+      - file.name
+      - asset_type
+      - owner
+      - vendor
+      - status
+      - cost
+    sort:
+      - property: file.name
+        direction: ASC

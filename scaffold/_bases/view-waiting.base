@@ -1,0 +1,15 @@
+filters:
+  and:
+    - type == "conversation"
+    - status == "waiting"
+views:
+  - type: table
+    name: Waiting On Others
+    order:
+      - file.name
+      - participants
+      - project
+      - last_activity
+    sort:
+      - property: last_activity
+        direction: ASC

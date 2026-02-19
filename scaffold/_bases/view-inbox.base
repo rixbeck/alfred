@@ -1,0 +1,18 @@
+filters:
+  and:
+    - type == "input"
+    - status == "unprocessed"
+    - not:
+        - file.folder == "_templates"
+views:
+  - type: table
+    name: Unprocessed Inbox
+    order:
+      - file.name
+      - input_type
+      - from
+      - received
+      - alfred_instructions
+    sort:
+      - property: received
+        direction: DESC

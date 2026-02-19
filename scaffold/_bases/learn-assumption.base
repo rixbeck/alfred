@@ -1,0 +1,31 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Depends On This
+    filters:
+      or:
+        - type == "decision"
+        - type == "project"
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.name
+        direction: ASC
+    description: Decisions and plans that rest on this assumption
+  - type: table
+    name: Related
+    filters:
+      and:
+        - type != "decision"
+        - type != "project"
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.name
+        direction: ASC

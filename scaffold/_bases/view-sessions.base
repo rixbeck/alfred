@@ -1,0 +1,18 @@
+filters:
+  and:
+    - type == "session"
+    - not:
+        - file.folder == "_templates"
+views:
+  - type: table
+    name: All Recent Sessions
+    order:
+      - file.name
+      - intent
+      - participants
+      - project
+      - status
+      - created
+    sort:
+      - property: created
+        direction: DESC

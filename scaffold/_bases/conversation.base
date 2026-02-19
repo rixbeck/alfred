@@ -1,0 +1,29 @@
+filters:
+  and:
+    - type == "conversation"
+views:
+  - type: table
+    name: Active
+    filters: status == "active"
+    order:
+      - file.name
+      - channel
+      - participants
+      - project
+      - message_count
+      - last_activity
+    sort:
+      - property: last_activity
+        direction: DESC
+  - type: table
+    name: Waiting
+    filters: status == "waiting"
+    order:
+      - file.name
+      - channel
+      - participants
+      - project
+      - last_activity
+    sort:
+      - property: last_activity
+        direction: ASC

@@ -1,0 +1,14 @@
+filters:
+  and:
+    - type == "project"
+    - status != "archived"
+views:
+  - type: table
+    name: Active Projects
+    order:
+      - file.name
+      - status
+      - owner
+    sort:
+      - property: status
+        direction: ASC

@@ -1,0 +1,169 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Assumptions
+    filters: type == "assumption"
+    order:
+      - file.name
+      - status
+      - confidence
+      - source_date
+    sort:
+      - property: status
+        direction: ASC
+      - property: confidence
+        direction: DESC
+  - type: table
+    name: Decisions
+    filters: type == "decision"
+    order:
+      - file.name
+      - status
+      - confidence
+      - decided_by
+      - approved_by
+      - source_date
+    sort:
+      - property: source_date
+        direction: DESC
+  - type: table
+    name: Constraints
+    filters: type == "constraint"
+    order:
+      - file.name
+      - status
+      - authority
+      - source
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Contradictions
+    filters:
+      and:
+        - type == "contradiction"
+    order:
+      - file.name
+      - status
+      - created
+    sort:
+      - property: status
+        direction: ASC
+  - type: table
+    name: Dependencies
+    filters:
+      or:
+        - type == "project"
+        - type == "process"
+        - type == "run"
+    order:
+      - file.name
+      - type
+      - status
+      - depends_on
+      - blocked_by
+    sort:
+      - property: type
+        direction: ASC
+      - property: file.name
+        direction: ASC
+    description: Projects, processes, and records this project depends on or is blocked by
+  - type: table
+    name: Learnings
+    filters: type == "synthesis"
+    order:
+      - file.name
+      - status
+      - confidence
+      - created
+    sort:
+      - property: created
+        direction: DESC
+  - type: table
+    name: Tasks
+    filters:
+      and:
+        - type == "task"
+        - status != "done"
+        - status != "cancelled"
+    order:
+      - file.name
+      - assigned
+      - kind
+      - status
+      - due
+      - priority
+      - blocked_by
+    sort:
+      - property: priority
+        direction: DESC
+      - property: due
+        direction: ASC
+  - type: table
+    name: Sub-projects
+    filters: type == "project"
+    order:
+      - file.name
+      - status
+      - owner
+      - depends_on
+  - type: table
+    name: Sessions
+    filters: type == "session"
+    order:
+      - file.name
+      - created
+      - intent
+      - participants
+    sort:
+      - property: created
+        direction: DESC
+  - type: table
+    name: Notes
+    filters: type == "note"
+    order:
+      - file.name
+      - subtype
+      - created
+    sort:
+      - property: created
+        direction: DESC
+  - type: table
+    name: Assets
+    filters: type == "asset"
+    order:
+      - file.name
+      - asset_type
+      - status
+      - vendor
+      - cost
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Conversations
+    filters: type == "conversation"
+    order:
+      - file.name
+      - channel
+      - status
+      - participants
+      - last_activity
+      - message_count
+    sort:
+      - property: last_activity
+        direction: DESC
+  - type: table
+    name: Inputs
+    filters: type == "input"
+    order:
+      - file.name
+      - input_type
+      - from
+      - received
+      - status
+    sort:
+      - property: received
+        direction: DESC

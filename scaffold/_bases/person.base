@@ -1,0 +1,108 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Decisions
+    filters: type == "decision"
+    order:
+      - file.name
+      - status
+      - confidence
+      - project
+      - source_date
+    sort:
+      - property: source_date
+        direction: DESC
+  - type: table
+    name: Learnings
+    filters:
+      or:
+        - type == "assumption"
+        - type == "synthesis"
+    order:
+      - file.name
+      - type
+      - status
+      - confidence
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Tasks
+    filters:
+      and:
+        - type == "task"
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
+      - project
+      - kind
+      - status
+      - due
+    sort:
+      - property: due
+        direction: ASC
+  - type: table
+    name: Projects
+    filters: type == "project"
+    order:
+      - file.name
+      - status
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Sessions
+    filters: type == "session"
+    order:
+      - file.name
+      - created
+      - intent
+    sort:
+      - property: created
+        direction: DESC
+  - type: table
+    name: Accounts
+    filters: type == "account"
+    order:
+      - file.name
+      - account_type
+      - provider
+      - status
+      - cost
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Assets
+    filters: type == "asset"
+    order:
+      - file.name
+      - asset_type
+      - vendor
+      - status
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Notes
+    filters: type == "note"
+    groupBy:
+      property: related
+      direction: ASC
+    order:
+      - file.name
+      - subtype
+      - created
+      - project
+      - related
+    sort:
+      - property: related
+        direction: ASC
+      - property: created
+        direction: DESC
+    summaries:
+      related: Filled

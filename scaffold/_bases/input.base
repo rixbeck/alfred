@@ -1,0 +1,33 @@
+filters:
+  and:
+    - type == "input"
+    - status == "unprocessed"
+views:
+  - type: table
+    name: Unprocessed
+    order:
+      - file.name
+      - input_type
+      - source
+      - from
+      - received
+      - conversation
+    sort:
+      - property: received
+        direction: DESC
+  - type: table
+    name: All
+    filters:
+      not:
+        - status == "discarded"
+    order:
+      - file.name
+      - status
+      - input_type
+      - from
+      - received
+      - project
+      - alfred_instructions
+    sort:
+      - property: received
+        direction: DESC

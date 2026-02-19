@@ -1,0 +1,75 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: My Tasks - Active
+    filters:
+      and:
+        - type == "task"
+        - status != "done"
+        - status != "cancelled"
+    order:
+      - file.name
+      - project
+      - kind
+      - status
+      - due
+      - priority
+    sort:
+      - property: priority
+        direction: DESC
+      - property: due
+        direction: ASC
+  - type: table
+    name: My Tasks - Completed
+    filters:
+      and:
+        - type == "task"
+        - status == "done"
+    order:
+      - file.name
+      - project
+      - kind
+      - due
+    sort:
+      - property: due
+        direction: DESC
+  - type: table
+    name: My Conversations
+    filters: type == "conversation"
+    order:
+      - file.name
+      - channel
+      - status
+      - project
+      - last_activity
+      - message_count
+    sort:
+      - property: last_activity
+        direction: DESC
+  - type: table
+    name: Recent Sessions
+    filters: type == "session"
+    order:
+      - file.name
+      - intent
+      - created
+      - participants
+    sort:
+      - property: created
+        direction: DESC
+  - type: table
+    name: Unprocessed Inputs
+    filters:
+      and:
+        - type == "input"
+        - status == "unprocessed"
+    order:
+      - file.name
+      - input_type
+      - from
+      - received
+    sort:
+      - property: received
+        direction: DESC

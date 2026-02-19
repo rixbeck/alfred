@@ -1,0 +1,26 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: Assets
+    filters: type == "asset"
+    order:
+      - file.name
+      - asset_type
+      - status
+      - owner
+    sort:
+      - property: file.name
+        direction: ASC
+    description: Assets associated with this account
+  - type: table
+    name: Related
+    filters: type != "asset"
+    order:
+      - file.name
+      - type
+      - status
+    sort:
+      - property: file.name
+        direction: ASC

@@ -1,0 +1,144 @@
+"""Process manager — `alfred up` starts all daemons via multiprocessing."""
+
+from __future__ import annotations
+
+import asyncio
+import multiprocessing
+import signal
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+
+def _run_curator(raw: dict[str, Any], base_dir: str) -> None:
+    """Curator daemon process entry point."""
+    from alfred.curator.config import load_from_unified
+    from alfred.curator.utils import setup_logging
+    config = load_from_unified(raw)
+    log_cfg = raw.get("logging", {})
+    setup_logging(level=log_cfg.get("level", "INFO"), log_file=f"{log_cfg.get('dir', './data')}/curator.log")
+    from alfred.curator.daemon import run
+    asyncio.run(run(config, Path(base_dir)))
+
+
+def _run_janitor(raw: dict[str, Any], base_dir: str) -> None:
+    """Janitor watch daemon process entry point."""
+    from alfred.janitor.config import load_from_unified
+    from alfred.janitor.utils import setup_logging
+    config = load_from_unified(raw)
+    log_cfg = raw.get("logging", {})
+    setup_logging(level=log_cfg.get("level", "INFO"), log_file=f"{log_cfg.get('dir', './data')}/janitor.log")
+    from alfred.janitor.state import JanitorState
+    from alfred.janitor.daemon import run_watch
+    state = JanitorState(config.state.path, config.state.max_sweep_history)
+    state.load()
+    asyncio.run(run_watch(config, state, Path(base_dir)))
+
+
+def _run_distiller(raw: dict[str, Any], base_dir: str) -> None:
+    """Distiller watch daemon process entry point."""
+    from alfred.distiller.config import load_from_unified
+    from alfred.distiller.utils import setup_logging
+    config = load_from_unified(raw)
+    log_cfg = raw.get("logging", {})
+    setup_logging(level=log_cfg.get("level", "INFO"), log_file=f"{log_cfg.get('dir', './data')}/distiller.log")
+    from alfred.distiller.state import DistillerState
+    from alfred.distiller.daemon import run_watch
+    state = DistillerState(config.state.path, config.state.max_run_history)
+    state.load()
+    asyncio.run(run_watch(config, state, Path(base_dir)))
+
+
+def _run_surveyor(raw: dict[str, Any]) -> None:
+    """Surveyor daemon process entry point."""
+    from alfred.surveyor.config import load_from_unified
+    from alfred.surveyor.utils import setup_logging
+    config = load_from_unified(raw)
+    log_cfg = raw.get("logging", {})
+    setup_logging(level=log_cfg.get("level", "INFO"), log_file=f"{log_cfg.get('dir', './data')}/surveyor.log")
+    from alfred.surveyor.daemon import Daemon
+    daemon = Daemon(config)
+    daemon.run()
+
+
+TOOL_RUNNERS = {
+    "curator": _run_curator,
+    "janitor": _run_janitor,
+    "distiller": _run_distiller,
+    "surveyor": _run_surveyor,
+}
+
+
+def run_all(
+    raw: dict[str, Any],
+    only: str | None = None,
+    base_dir: Path | None = None,
+) -> None:
+    """Start selected daemons as child processes with auto-restart."""
+    if base_dir is None:
+        base_dir = Path(__file__).resolve().parent.parent.parent
+
+    base_dir_str = str(base_dir)
+
+    # Determine which tools to run
+    if only:
+        tools = [t.strip() for t in only.split(",")]
+    else:
+        tools = ["curator", "janitor", "distiller"]
+        # Only add surveyor if config section exists
+        if "surveyor" in raw:
+            tools.append("surveyor")
+
+    # Validate tool names
+    for tool in tools:
+        if tool not in TOOL_RUNNERS:
+            print(f"Unknown tool: {tool}")
+            print(f"Available: {', '.join(TOOL_RUNNERS.keys())}")
+            sys.exit(1)
+
+    print(f"Starting daemons: {', '.join(tools)}")
+
+    processes: dict[str, multiprocessing.Process] = {}
+    restart_counts: dict[str, int] = {}
+
+    def start_process(tool: str) -> multiprocessing.Process:
+        runner = TOOL_RUNNERS[tool]
+        if tool == "surveyor":
+            p = multiprocessing.Process(target=runner, args=(raw,), name=f"alfred-{tool}")
+        else:
+            p = multiprocessing.Process(target=runner, args=(raw, base_dir_str), name=f"alfred-{tool}")
+        p.daemon = True
+        p.start()
+        print(f"  [{tool}] started (pid {p.pid})")
+        return p
+
+    # Start all
+    for tool in tools:
+        processes[tool] = start_process(tool)
+        restart_counts[tool] = 0
+
+    # Monitor loop
+    try:
+        while True:
+            time.sleep(5)
+            for tool in tools:
+                p = processes[tool]
+                if not p.is_alive():
+                    exit_code = p.exitcode
+                    restart_counts[tool] += 1
+                    if restart_counts[tool] <= 5:
+                        print(f"  [{tool}] exited ({exit_code}), restarting ({restart_counts[tool]}/5)...")
+                        processes[tool] = start_process(tool)
+                    else:
+                        print(f"  [{tool}] exceeded restart limit, giving up")
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+        for tool, p in processes.items():
+            if p.is_alive():
+                p.terminate()
+                p.join(timeout=5)
+                if p.is_alive():
+                    p.kill()
+                print(f"  [{tool}] stopped")
+        print("All daemons stopped.")

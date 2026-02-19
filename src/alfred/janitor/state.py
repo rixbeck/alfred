@@ -1,0 +1,124 @@
+"""State persistence — state.json load/save with open issues and fix log."""
+
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+
+import structlog
+
+from .issues import FixLogEntry, SweepResult
+
+log = structlog.get_logger()
+
+
+@dataclass
+class FileState:
+    md5: str
+    last_scanned: str = ""
+    open_issues: list[str] = field(default_factory=list)  # issue codes
+
+
+class JanitorState:
+    def __init__(self, state_path: str | Path, max_sweep_history: int = 20) -> None:
+        self.state_path = Path(state_path)
+        self.max_sweep_history = max_sweep_history
+        self.version: int = 1
+        self.files: dict[str, FileState] = {}  # rel_path -> FileState
+        self.sweeps: dict[str, SweepResult] = {}  # sweep_id -> SweepResult
+        self.fix_log: list[FixLogEntry] = []  # permanent audit trail
+        self.ignored: dict[str, str] = {}  # rel_path -> reason
+        self.pending_writes: dict[str, str] = {}  # rel_path -> expected_md5
+
+    def load(self) -> None:
+        """Load state from disk if it exists."""
+        if not self.state_path.exists():
+            log.info("state.no_existing_state", path=str(self.state_path))
+            return
+        with open(self.state_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        self.version = raw.get("version", 1)
+        for rel, fdata in raw.get("files", {}).items():
+            self.files[rel] = FileState(**fdata)
+        for sid, sdata in raw.get("sweeps", {}).items():
+            self.sweeps[sid] = SweepResult.from_dict(sdata)
+        self.fix_log = [FixLogEntry.from_dict(e) for e in raw.get("fix_log", [])]
+        self.ignored = raw.get("ignored", {})
+        self.pending_writes = raw.get("pending_writes", {})
+        log.info("state.loaded", files=len(self.files), sweeps=len(self.sweeps))
+
+    def save(self) -> None:
+        """Atomic save: write to .tmp then os.replace."""
+        # Trim sweep history
+        if len(self.sweeps) > self.max_sweep_history:
+            sorted_ids = sorted(self.sweeps.keys(), key=lambda k: self.sweeps[k].timestamp)
+            for sid in sorted_ids[:-self.max_sweep_history]:
+                del self.sweeps[sid]
+
+        data = {
+            "version": self.version,
+            "files": {
+                rel: {
+                    "md5": fs.md5,
+                    "last_scanned": fs.last_scanned,
+                    "open_issues": fs.open_issues,
+                }
+                for rel, fs in self.files.items()
+            },
+            "sweeps": {sid: sr.to_dict() for sid, sr in self.sweeps.items()},
+            "fix_log": [e.to_dict() for e in self.fix_log],
+            "ignored": self.ignored,
+            "pending_writes": self.pending_writes,
+        }
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = self.state_path.with_suffix(".tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp_path, self.state_path)
+
+    def should_scan(self, rel_path: str, current_md5: str) -> bool:
+        """Return True if a file needs scanning (changed or has open issues)."""
+        if rel_path in self.ignored:
+            return False
+        if rel_path not in self.files:
+            return True
+        fs = self.files[rel_path]
+        if fs.md5 != current_md5:
+            return True
+        if fs.open_issues:
+            return True
+        return False
+
+    def update_file(self, rel_path: str, md5: str, issue_codes: list[str] | None = None) -> None:
+        """Update or create a file entry after scanning."""
+        now = datetime.now(timezone.utc).isoformat()
+        if rel_path in self.files:
+            self.files[rel_path].md5 = md5
+            self.files[rel_path].last_scanned = now
+            self.files[rel_path].open_issues = issue_codes or []
+        else:
+            self.files[rel_path] = FileState(
+                md5=md5,
+                last_scanned=now,
+                open_issues=issue_codes or [],
+            )
+
+    def remove_file(self, rel_path: str) -> None:
+        """Remove a file from state."""
+        self.files.pop(rel_path, None)
+        self.pending_writes.pop(rel_path, None)
+
+    def add_sweep(self, result: SweepResult) -> None:
+        """Record a sweep result."""
+        self.sweeps[result.sweep_id] = result
+
+    def add_fix_log(self, entry: FixLogEntry) -> None:
+        """Append to the permanent fix log."""
+        self.fix_log.append(entry)
+
+    def ignore_file(self, rel_path: str, reason: str = "") -> None:
+        """Add a file to the ignore list."""
+        self.ignored[rel_path] = reason

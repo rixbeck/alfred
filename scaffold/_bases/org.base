@@ -1,0 +1,69 @@
+filters:
+  and:
+    - file.hasLink(this.file)
+views:
+  - type: table
+    name: People
+    filters: type == "person"
+    order:
+      - file.name
+      - role
+      - email
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Projects
+    filters: type == "project"
+    order:
+      - file.name
+      - status
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Tasks
+    filters: type == "task"
+    order:
+      - file.name
+      - project
+      - status
+      - due
+      - assigned
+    sort:
+      - property: due
+        direction: ASC
+  - type: table
+    name: Accounts
+    filters: type == "account"
+    order:
+      - file.name
+      - account_type
+      - status
+      - managed_by
+      - cost
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Assets
+    filters: type == "asset"
+    order:
+      - file.name
+      - asset_type
+      - status
+      - owner
+      - cost
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: Notes
+    filters: type == "note"
+    order:
+      - file.name
+      - subtype
+      - created
+    sort:
+      - property: created
+        direction: DESC

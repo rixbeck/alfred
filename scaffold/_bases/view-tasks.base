@@ -1,0 +1,50 @@
+filters:
+  and:
+    - type == "task"
+views:
+  - type: table
+    name: Open
+    filters:
+      and:
+        - status != "done"
+        - status != "cancelled"
+    groupBy:
+      property: project
+      direction: ASC
+    order:
+      - file.name
+      - assigned
+      - kind
+      - status
+      - due
+      - priority
+      - blocked_by
+    sort:
+      - property: priority
+        direction: DESC
+      - property: due
+        direction: ASC
+  - type: table
+    name: Blocked
+    filters: status == "blocked"
+    order:
+      - file.name
+      - project
+      - assigned
+      - blocked_by
+      - due
+    sort:
+      - property: due
+        direction: ASC
+  - type: table
+    name: Recently Completed
+    filters: status == "done"
+    order:
+      - file.name
+      - project
+      - assigned
+      - kind
+      - due
+    sort:
+      - property: due
+        direction: DESC
