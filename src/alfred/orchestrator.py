@@ -50,14 +50,23 @@ def _run_distiller(raw: dict[str, Any], base_dir: str) -> None:
     asyncio.run(run_watch(config, state, Path(base_dir)))
 
 
+_MISSING_DEPS_EXIT = 78  # exit code signaling missing optional dependencies
+
+
 def _run_surveyor(raw: dict[str, Any]) -> None:
     """Surveyor daemon process entry point."""
-    from alfred.surveyor.config import load_from_unified
-    from alfred.surveyor.utils import setup_logging
+    try:
+        from alfred.surveyor.config import load_from_unified
+        from alfred.surveyor.utils import setup_logging
+        from alfred.surveyor.daemon import Daemon
+    except ImportError as e:
+        print(f"  [surveyor] ERROR: missing dependencies: {e}")
+        print(f"  [surveyor] Install with: pip install -e '.[all]'")
+        sys.exit(_MISSING_DEPS_EXIT)
+
     config = load_from_unified(raw)
     log_cfg = raw.get("logging", {})
     setup_logging(level=log_cfg.get("level", "INFO"), log_file=f"{log_cfg.get('dir', './data')}/surveyor.log")
-    from alfred.surveyor.daemon import Daemon
     daemon = Daemon(config)
     daemon.run()
 
@@ -126,6 +135,10 @@ def run_all(
                 p = processes[tool]
                 if not p.is_alive():
                     exit_code = p.exitcode
+                    if exit_code == _MISSING_DEPS_EXIT:
+                        print(f"  [{tool}] missing dependencies, not restarting")
+                        tools = [t for t in tools if t != tool]
+                        continue
                     restart_counts[tool] += 1
                     if restart_counts[tool] <= 5:
                         print(f"  [{tool}] exited ({exit_code}), restarting ({restart_counts[tool]}/5)...")

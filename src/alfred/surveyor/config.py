@@ -118,16 +118,20 @@ def _build_dataclass(cls, data: dict | None):
     """Build a dataclass from a dict, handling nested dataclasses."""
     if data is None:
         return cls()
+    # Resolve string annotations to actual types
+    import typing
+    hints = typing.get_type_hints(cls)
     kwargs = {}
     for f in cls.__dataclass_fields__.values():
         if f.name not in data:
             continue
         val = data[f.name]
+        resolved_type = hints.get(f.name, f.type)
         # Check if the field type is itself a dataclass
-        origin = getattr(f.type, "__origin__", None)
-        if origin is None and hasattr(f.type, "__dataclass_fields__"):
-            kwargs[f.name] = _build_dataclass(f.type, val)
-        elif f.type is Path or (isinstance(f.type, type) and issubclass(f.type, Path)):
+        origin = getattr(resolved_type, "__origin__", None)
+        if origin is None and hasattr(resolved_type, "__dataclass_fields__"):
+            kwargs[f.name] = _build_dataclass(resolved_type, val)
+        elif resolved_type is Path or (isinstance(resolved_type, type) and issubclass(resolved_type, Path)):
             kwargs[f.name] = Path(val)
         else:
             kwargs[f.name] = val

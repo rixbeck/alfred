@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 surveyor = [
-    "pymilvus>=2.4",
+    "pymilvus[milvus_lite]>=2.4",
     "scikit-learn>=1.4",
     "leidenalg>=0.10",
     "igraph>=0.11",

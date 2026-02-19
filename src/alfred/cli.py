@@ -189,13 +189,13 @@ def cmd_surveyor(args: argparse.Namespace) -> None:
 
     try:
         from alfred.surveyor.config import load_from_unified
-    except ImportError:
-        print("Surveyor dependencies not installed.")
+        from alfred.surveyor.daemon import Daemon
+    except ImportError as e:
+        print(f"Surveyor dependencies not installed: {e}")
         print("Install with: pip install -e '.[all]'")
         sys.exit(1)
 
     config = load_from_unified(raw)
-    from alfred.surveyor.daemon import Daemon
     daemon = Daemon(config)
     try:
         daemon.run()

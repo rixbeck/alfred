@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -94,34 +95,49 @@ def run_quickstart() -> None:
     zo_api_key = ""
     if backend == "claude":
         if _check_command("claude"):
-            print("  ✓ `claude` found on PATH")
+            print("  [OK] `claude` found on PATH")
         else:
-            print("  ⚠ `claude` not found on PATH — install Claude Code first")
+            print("  [!!] `claude` not found on PATH -- install Claude Code first")
 
     elif backend == "zo":
         zo_api_key = _prompt("  Enter your ZO_API_KEY")
         if not zo_api_key:
-            print("  ⚠ No API key provided — you'll need to set ZO_API_KEY in .env")
+            print("  [!!] No API key provided -- you'll need to set ZO_API_KEY in .env")
 
     elif backend == "openclaw":
         if _check_command("openclaw"):
-            print("  ✓ `openclaw` found on PATH")
+            print("  [OK] `openclaw` found on PATH")
         else:
-            print("  ⚠ `openclaw` not found on PATH")
+            print("  [!!] `openclaw` not found on PATH")
 
     # 5. Surveyor
     enable_surveyor = _prompt("\nEnable surveyor? (requires Ollama + OpenRouter) [y/N]", "n").lower() in ("y", "yes")
     openrouter_api_key = ""
 
     if enable_surveyor:
-        if _check_ollama():
-            print("  ✓ Ollama is running")
+        # Install surveyor dependencies
+        print("\n  Installing surveyor dependencies...")
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-e", ".[all]"],
+            capture_output=True, text=True,
+            cwd=str(Path(__file__).resolve().parent.parent.parent),
+        )
+        if result.returncode == 0:
+            print("  [OK] Surveyor dependencies installed")
         else:
-            print("  ⚠ Ollama not reachable at localhost:11434")
+            print("  [!!] Failed to install surveyor dependencies:")
+            print(f"       {result.stderr.strip()[:200]}")
+            print("       Run manually: pip install -e '.[all]'")
+
+        if _check_ollama():
+            print("  [OK] Ollama is running")
+        else:
+            print("  [!!] Ollama not reachable at localhost:11434")
+            print("       Install Ollama and run: ollama pull nomic-embed-text")
 
         openrouter_api_key = _prompt("  Enter your OPENROUTER_API_KEY")
         if not openrouter_api_key:
-            print("  ⚠ No API key — you'll need to set OPENROUTER_API_KEY in .env")
+            print("  [!!] No API key -- you'll need to set OPENROUTER_API_KEY in .env")
 
     # 6. Write files
     print(f"\n--- Setting up ---")
