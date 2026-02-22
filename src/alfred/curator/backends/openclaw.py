@@ -25,19 +25,15 @@ class OpenClawBackend(BaseBackend):
     ) -> BackendResult:
         prompt = build_prompt(inbox_content, skill_text, vault_context, inbox_filename, vault_path)
 
-        cmd = [self.config.command, *self.config.args]
+        cmd = [self.config.command, "agent", *self.config.args,
+               "--message", prompt, "--local", "--json"]
 
-        # Mount the vault as workspace
-        workspace = self.config.workspace_mount or vault_path
-        cmd.extend(["--workspace", workspace])
-
-        # Prompt as last argument
-        cmd.append(prompt)
+        cwd = self.config.workspace_mount or vault_path
 
         log.info(
             "openclaw.dispatching",
             command=self.config.command,
-            workspace=workspace,
+            cwd=cwd,
             timeout=self.config.timeout,
         )
 
@@ -46,6 +42,7 @@ class OpenClawBackend(BaseBackend):
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                cwd=cwd,
             )
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(),
