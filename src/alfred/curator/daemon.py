@@ -146,8 +146,9 @@ async def _process_file(
     if not files_created and not files_modified:
         log.warning("daemon.no_changes", file=filename)
 
-    # Mark processed and move
-    mark_processed(inbox_file, config.vault.processed_path)
+    # Mark processed and move (skip if agent already moved the file)
+    if inbox_file.exists():
+        mark_processed(inbox_file, config.vault.processed_path)
 
     # Update state
     state_mgr.state.mark_processed(

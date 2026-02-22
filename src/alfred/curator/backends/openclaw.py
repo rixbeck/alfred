@@ -34,7 +34,7 @@ class OpenClawBackend(BaseBackend):
         cmd = [self.config.command, "agent", *self.config.args,
                "--agent", self.config.agent_id,
                "--session-id", session_id,
-               "--message", "-", "--local", "--json"]
+               "--message", prompt, "--local", "--json"]
 
         cwd = self.config.workspace_mount or vault_path
 
@@ -51,14 +51,13 @@ class OpenClawBackend(BaseBackend):
             env = {**os.environ, **self.env_overrides}
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
-                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,
                 env=env,
             )
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(input=prompt.encode("utf-8")),
+                proc.communicate(),
                 timeout=self.config.timeout,
             )
         except asyncio.TimeoutError:
