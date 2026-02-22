@@ -28,8 +28,9 @@ class ClaudeBackend(BaseBackend):
         if self.config.allowed_tools:
             cmd.extend(["--allowedTools", ",".join(self.config.allowed_tools)])
 
-        # Prompt is the last argument
-        cmd.append(prompt)
+        # Prompt via stdin to avoid ARG_MAX limits on large inputs
+        cmd.append("-p")
+        cmd.append("-")
 
         # Build environment with vault env vars
         env = {**os.environ, **self.env_overrides}
@@ -44,12 +45,13 @@ class ClaudeBackend(BaseBackend):
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 env=env,
             )
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(),
+                proc.communicate(input=prompt.encode("utf-8")),
                 timeout=self.config.timeout,
             )
         except asyncio.TimeoutError:

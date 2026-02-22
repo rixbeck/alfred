@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import uuid
 
 from ..config import OpenClawBackendConfig
 from ..utils import get_logger
@@ -22,15 +23,20 @@ class OpenClawBackend(BaseBackend):
         prompt: str,
         vault_path: str,
     ) -> BackendResult:
+        session_id = f"distiller-{uuid.uuid4().hex[:12]}"
+
         cmd = [self.config.command, "agent", *self.config.args,
-               "--agent", "alfred",
-               "--message", prompt, "--local", "--json"]
+               "--agent", self.config.agent_id,
+               "--session-id", session_id,
+               "--message", "-", "--local", "--json"]
 
         cwd = self.config.workspace_mount or vault_path
 
         log.info(
             "openclaw.dispatching",
             command=self.config.command,
+            agent_id=self.config.agent_id,
+            session_id=session_id,
             cwd=cwd,
             timeout=self.config.timeout,
         )
@@ -39,13 +45,14 @@ class OpenClawBackend(BaseBackend):
             env = {**os.environ, **self.env_overrides}
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,
                 env=env,
             )
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(),
+                proc.communicate(input=prompt.encode("utf-8")),
                 timeout=self.config.timeout,
             )
         except asyncio.TimeoutError:

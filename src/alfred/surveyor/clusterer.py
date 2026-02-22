@@ -117,7 +117,7 @@ class Clusterer:
         # Run Leiden
         partition = leidenalg.find_partition(
             g,
-            leidenalg.ModularityVertexPartition,
+            leidenalg.RBConfigurationVertexPartition,
             resolution_parameter=self.config.leiden.resolution,
         )
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -307,6 +308,54 @@ def cmd_exec(args: argparse.Namespace) -> None:
     sys.exit(result.returncode if result else 1)
 
 
+def cmd_ingest(args: argparse.Namespace) -> None:
+    """Split a bulk conversation export into individual inbox files."""
+    from alfred.curator.ingest import ingest_file
+
+    json_path = Path(args.file).resolve()
+    if not json_path.exists():
+        print(f"File not found: {json_path}")
+        sys.exit(1)
+
+    raw = _load_unified_config(args.config)
+    vault_cfg = raw.get("vault", {})
+    vault_path = Path(vault_cfg.get("path", "./vault")).resolve()
+    curator_cfg = raw.get("curator", {})
+    inbox_dir = curator_cfg.get("inbox_dir", "inbox")
+    processed_dir = curator_cfg.get("processed_dir", "inbox/processed")
+    inbox_path = vault_path / inbox_dir
+    processed_path = vault_path / processed_dir
+
+    try:
+        count = ingest_file(
+            json_path=json_path,
+            inbox_path=inbox_path,
+            processed_path=processed_path,
+            dry_run=args.dry_run,
+        )
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    if not args.dry_run and count > 0:
+        print(f"\nDone. The curator daemon will pick up the {count} files automatically.")
+
+
+def cmd_process(args: argparse.Namespace) -> None:
+    """Batch-process all unprocessed inbox files with progress display."""
+    import asyncio
+    raw = _load_unified_config(args.config)
+    _setup_logging_from_config(raw)
+    from alfred.curator.config import load_from_unified
+    config = load_from_unified(raw)
+    from alfred.curator.process import run_batch
+    from alfred._data import get_skills_dir
+    try:
+        asyncio.run(run_batch(config, get_skills_dir(), limit=args.limit, dry_run=args.dry_run))
+    except KeyboardInterrupt:
+        pass
+
+
 def cmd_surveyor(args: argparse.Namespace) -> None:
     raw = _load_unified_config(args.config)
     _setup_logging_from_config(raw)
@@ -412,6 +461,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="Command to run (use -- before the command)",
     )
 
+    # ingest
+    ingest_parser = sub.add_parser(
+        "ingest",
+        help="Split a bulk conversation export (ChatGPT/Anthropic) into individual inbox files",
+    )
+    ingest_parser.add_argument(
+        "file",
+        help="Path to a conversations JSON export",
+    )
+    ingest_parser.add_argument(
+        "--dry-run", action="store_true", default=False,
+        help="Show what would be created without writing files",
+    )
+
+    # process
+    process_parser = sub.add_parser(
+        "process",
+        help="Batch-process all unprocessed inbox files with progress display",
+    )
+    process_parser.add_argument(
+        "--limit", "-n", type=int, default=None,
+        help="Process only N files (for testing)",
+    )
+    process_parser.add_argument(
+        "--dry-run", action="store_true", default=False,
+        help="Show what would be processed without running",
+    )
+
     # surveyor
     sub.add_parser("surveyor", help="Start surveyor pipeline")
 
@@ -436,6 +513,8 @@ def main() -> None:
         "distiller": cmd_distiller,
         "vault": cmd_vault,
         "exec": cmd_exec,
+        "ingest": cmd_ingest,
+        "process": cmd_process,
         "surveyor": cmd_surveyor,
     }
 

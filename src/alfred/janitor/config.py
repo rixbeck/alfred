@@ -63,6 +63,7 @@ class OpenClawBackendConfig:
     args: list[str] = field(default_factory=list)
     workspace_mount: str = ""
     timeout: int = 600
+    agent_id: str = "vault-curator"
 
 
 @dataclass
