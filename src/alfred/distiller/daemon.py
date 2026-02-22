@@ -327,7 +327,8 @@ async def run_watch(
     interval = config.extraction.interval_seconds
     deep_interval_hours = config.extraction.deep_interval_hours
 
-    last_deep = datetime.now(timezone.utc)
+    # Start with epoch so the first run is always a deep extraction
+    last_deep = datetime.min.replace(tzinfo=timezone.utc)
 
     log.info(
         "daemon.starting",

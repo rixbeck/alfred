@@ -272,7 +272,8 @@ async def run_watch(
     deep_interval_hours = config.sweep.deep_sweep_interval_hours
     structural_only = config.sweep.structural_only
 
-    last_deep = datetime.now(timezone.utc)
+    # Start with epoch so the first sweep is always a deep sweep (fix mode)
+    last_deep = datetime.min.replace(tzinfo=timezone.utc)
 
     log.info(
         "daemon.starting",

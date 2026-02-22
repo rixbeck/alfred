@@ -76,9 +76,19 @@ async def _process_file(
     filename = inbox_file.name
     log.info("daemon.processing", file=filename)
 
-    # Read inbox content
+    # Read inbox content — handle both text and binary files
     try:
         inbox_content = inbox_file.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Binary file (PDF, image, etc.) — provide metadata description
+        size_kb = inbox_file.stat().st_size / 1024
+        inbox_content = (
+            f"[Binary file: {filename} ({size_kb:.1f} KB)]\n"
+            f"This is a binary file that cannot be read as text. "
+            f"The file has been placed in the inbox for processing. "
+            f"Please create an appropriate vault record based on the filename."
+        )
+        log.info("daemon.binary_file", file=filename, size_kb=round(size_kb, 1))
     except Exception as e:
         log.error("daemon.read_failed", file=filename, error=str(e))
         return

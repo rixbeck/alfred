@@ -41,9 +41,20 @@ class Embedder:
         self.vault_path = vault_path
         self.state = state
 
-        # Milvus Lite client
-        self.milvus = MilvusClient(uri=milvus_cfg.uri)
+        # Milvus Lite client — retry on lock contention from prior process
         self.collection_name = milvus_cfg.collection_name
+        import time
+        for attempt in range(4):
+            try:
+                self.milvus = MilvusClient(uri=milvus_cfg.uri)
+                break
+            except Exception as e:
+                if attempt < 3:
+                    delay = 2.0 * (2 ** attempt)
+                    log.warning("embedder.milvus_retry", attempt=attempt + 1, delay=delay, error=str(e))
+                    time.sleep(delay)
+                else:
+                    raise
         self._ensure_collection()
 
     def _ensure_collection(self) -> None:

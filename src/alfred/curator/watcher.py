@@ -34,8 +34,10 @@ class InboxHandler(FileSystemEventHandler):
 
     def _handle(self, src_path: str) -> None:
         path = Path(src_path)
-        # Skip processed/ subdirectory
+        # Skip processed/ subdirectory and dotfiles
         if "processed" in path.parts:
+            return
+        if path.name.startswith("."):
             return
         with self._lock:
             self._pending[str(path)] = time.time()
@@ -86,8 +88,11 @@ class InboxWatcher:
         state_processed = state_processed or set()
         unprocessed: list[Path] = []
 
+        _skip_names = {".DS_Store", ".gitkeep", "Thumbs.db", ".gitignore"}
         for md_file in self.inbox_path.iterdir():
             if not md_file.is_file():
+                continue
+            if md_file.name.startswith(".") or md_file.name in _skip_names:
                 continue
             if md_file.name in state_processed:
                 continue
