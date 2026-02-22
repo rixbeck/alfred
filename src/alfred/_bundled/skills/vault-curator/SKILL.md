@@ -947,10 +947,12 @@ Before creating ANY record:
 
 ## 8. Key Principles
 
-1. **Link aggressively** — The power of the vault is in connections. Every record should link to related entities.
-2. **Check context first** — Before creating a new person/org/project, verify it doesn't already exist.
-3. **Follow templates exactly** — Use the frontmatter schemas above. Don't add or rename fields.
-4. **Be conservative with status** — New tasks: `todo`. New conversations: `active`. New notes: `draft`. New decisions: `draft` (unless clearly already decided → `final`).
-5. **Preserve raw content** — The original input content should be preserved in conversation activity logs, notes, or session records.
-6. **Use today's date** — Set `created` to the inbox file's date or today's date.
-7. **One record per file** — Each vault record is a single .md file with frontmatter.
+1. **ALWAYS create at least one vault record.** Every inbox file MUST result in at least one note, conversation, or other record in the vault — no exceptions. Even short or trivial conversations should produce a `note/` record summarizing the topic. Never just move a file to processed without creating vault records.
+2. **Link aggressively** — The power of the vault is in connections. Every record should link to related entities. Extract ALL people, orgs, projects, and topics mentioned and create or link to their records. A well-curated record has 3-10 wikilinks.
+3. **Enrich, don't just copy** — Don't create stub records with empty fields. Fill in descriptions, summarize content, identify relationships. A vault record should be more useful than the raw input.
+4. **Check context first** — Before creating a new person/org/project, verify it doesn't already exist.
+5. **Follow templates exactly** — Use the frontmatter schemas above. Don't add or rename fields.
+6. **Be conservative with status** — New tasks: `todo`. New conversations: `active`. New notes: `draft`. New decisions: `draft` (unless clearly already decided → `final`).
+7. **Preserve raw content** — The original input content should be preserved in conversation activity logs, notes, or session records.
+8. **Use today's date** — Set `created` to the inbox file's date or today's date.
+9. **One record per file** — Each vault record is a single .md file with frontmatter.
