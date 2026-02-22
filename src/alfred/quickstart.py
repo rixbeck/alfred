@@ -65,6 +65,58 @@ def _check_ollama() -> bool:
         return False
 
 
+def _setup_ollama() -> None:
+    """Install Ollama, start the server, and pull nomic-embed-text."""
+    import time
+
+    # Install if not present
+    if not _check_command("ollama"):
+        if sys.platform == "win32":
+            print("  [!!] Ollama not found. Download from https://ollama.com/download")
+            return
+        print("  Installing Ollama...")
+        result = subprocess.run(
+            ["bash", "-c", "curl -fsSL https://ollama.com/install.sh | sh"],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print("  [!!] Ollama install failed:")
+            print(f"       {result.stderr.strip()[:200]}")
+            return
+        print("  [OK] Ollama installed")
+
+    # Start server if not already running
+    if not _check_ollama():
+        print("  Starting Ollama server...")
+        subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        # Wait for it to come up
+        for _ in range(15):
+            time.sleep(1)
+            if _check_ollama():
+                break
+        if not _check_ollama():
+            print("  [!!] Ollama server did not start within 15s")
+            return
+        print("  [OK] Ollama server started")
+
+    # Pull the embedding model
+    print("  Pulling nomic-embed-text model (this may take a minute)...")
+    result = subprocess.run(
+        ["ollama", "pull", "nomic-embed-text"],
+        capture_output=True, text=True,
+        timeout=300,
+    )
+    if result.returncode == 0:
+        print("  [OK] nomic-embed-text model ready")
+    else:
+        print("  [!!] Failed to pull model:")
+        print(f"       {result.stderr.strip()[:200]}")
+
+
 def run_quickstart() -> None:
     print("=" * 50)
     print("  Alfred Quickstart")
@@ -129,11 +181,14 @@ def run_quickstart() -> None:
             print(f"       {result.stderr.strip()[:200]}")
             print("       Run manually: pip install alfred-vault[all]")
 
+        if not _check_ollama():
+            _setup_ollama()
+
         if _check_ollama():
             print("  [OK] Ollama is running")
         else:
-            print("  [!!] Ollama not reachable at localhost:11434")
-            print("       Install Ollama and run: ollama pull nomic-embed-text")
+            print("  [!!] Ollama still not reachable at localhost:11434")
+            print("       Install manually: https://ollama.com/download")
 
         openrouter_api_key = _prompt("  Enter your OPENROUTER_API_KEY")
         if not openrouter_api_key:
